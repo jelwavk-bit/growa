@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tomato Disease Tester</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; }
+        .result { margin-top: 20px; padding: 15px; border-left: 5px solid #2ecc71; background: #e8f8f5; display: none; }
+        h3 { color: #e74c3c; margin-top: 0; }
+        b { color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Leaf Diagnosis</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="uploadImage()">Scan Leaf</button>
+
+    <div id="resultBox" class="result">
+        <h3 id="resName"></h3>
+        <p><b>Confidence:</b> <span id="resConf"></span></p>
+        <p><b>Symptoms:</b> <span id="resSym"></span></p>
+        <p><b>Solution:</b> <span id="resSol"></span></p>
+        <p><b>Prevention:</b> <span id="resPrev"></span></p>
+    </div>
+</div>
+
+<script>
+    async function uploadImage() {
+        const fileInput = document.getElementById('imageInput');
+        if (fileInput.files.length === 0) return alert("Select an image first!");
+
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        // This calls your Django API
+        const response = await fetch('http://127.0.0.1:8000/api/diagnose/', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        const detection = data.detections[0]; // Get the first result
+
+        if (detection) {
+            document.getElementById('resultBox').style.display = 'block';
+            document.getElementById('resName').innerText = detection.name;
+            document.getElementById('resConf').innerText = detection.confidence;
+            document.getElementById('resSym').innerText = detection.symptoms;
+            document.getElementById('resSol').innerText = detection.solutions;
+            document.getElementById('resPrev').innerText = detection.prevention;
+        }
+    }
+</script>
+
+</body>
+</html>

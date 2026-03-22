@@ -4,9 +4,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from ultralytics import YOLO
 import cv2
 import numpy as np
+from .models import DiseaseInfo  # Import your new model
 
 # Load your models
-# IMPORTANT: Double check these file paths match where your models are!
 detector = YOLO("C:/Users/Hp/Downloads/tomato_best_float16.tflite", task="detect")
 classifier = YOLO("C:/Users/Hp/Downloads/tomato_disease_v2_50e.pt", task="classify")
 
@@ -42,8 +42,31 @@ class PredictDisease(APIView):
                     max_conf = conf
                     final_label = label
 
-        # 4. Return the JSON result
+        # 4. DATABASE LOOKUP: Fetch extra details using final_label
+        description = "N/A"
+        symptoms = "N/A"
+        solutions = "N/A"
+        prevention = "N/A"
+        display_name = final_label
+
+        try:
+            # We search the database using the label from the classifier
+            info = DiseaseInfo.objects.get(label=final_label)
+            display_name = info.display_name
+            description = info.description
+            symptoms = info.symptoms
+            solutions = info.solutions
+            prevention = info.preventive_measures
+        except DiseaseInfo.DoesNotExist:
+            pass # Keep default N/A if not found
+
+        # 5. Return the JSON result with ALL details
         return Response({
             "label": final_label,
-            "confidence": round(max_conf * 100, 2)
+            "display_name": display_name,
+            "confidence": f"{round(max_conf * 100, 2)}%",
+            "description": description,
+            "symptoms": symptoms,
+            "solutions": solutions,
+            "prevention": prevention
         })
